@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>🌿 Huios</title>
+<style>
+  body {
+    font-family: "Noto Sans KR", sans-serif;
+    background: #f7f7f7;
+    margin: 0;
+    padding: 0;
+  }
+  header {
+    background: #4a7c59;
+    color: white;
+    text-align: center;
+    padding: 1rem;
+  }
+  nav {
+    display: flex;
+    background: #6ca47c;
+    justify-content: space-around;
+  }
+  .tab {
+    padding: 1rem;
+    color: white;
+    cursor: pointer;
+  }
+  .tab.active {
+    background: #4a7c59;
+    font-weight: bold;
+  }
+  .view {
+    display: none;
+    padding: 1rem;
+  }
+  .view.active {
+    display: block;
+  }
+  .section {
+    background: white;
+    margin: 1rem 0;
+    padding: 1rem;
+    border-radius: 10px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+  }
+  textarea, input, select {
+    width: 100%;
+    padding: 0.7rem;
+    margin: 0.4rem 0;
+  }
+  button {
+    background: #4a7c59;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    padding: 0.6rem 1rem;
+    cursor: pointer;
+  }
+  button:hover { background: #3f664c; }
+  .item {
+    background: #f1f1f1;
+    padding: 0.5rem;
+    margin-top: 0.3rem;
+    border-radius: 6px;
+  }
+  .delete-btn {
+    background: #d9534f;
+    color: white;
+    border: none;
+    padding: 0.3rem 0.6rem;
+    border-radius: 4px;
+    cursor: pointer;
+  }
+  .delete-btn:hover { background: #b94441; }
+  .response {
+    margin-top: 0.4rem;
+    font-size: 0.9em;
+    color: #333;
+  }
+</style>
+</head>
+<body>
+<header><h1>🌿 Huios</h1></header>
+
+<nav>
+  <div class="tab active" data-tab="verse">오늘의 말씀</div>
+  <div class="tab" data-tab="bible">성경 탐색</div>
+  <div class="tab" data-tab="meditation">묵상</div>
+  <div class="tab" data-tab="prayer">기도</div>
+  <div class="tab" data-tab="thanks">감사</div>
+  <div class="tab" data-tab="favorites">즐겨찾기</div>
+</nav>
+
+<!-- 📖 오늘의 말씀 -->
+<div id="verse" class="view active">
+  <div class="section">
+    <h2>📖 오늘의 말씀</h2>
+    <p id="verseText">불러오는 중...</p>
+    <button id="newVerseBtn">새 말씀 보기</button>
+    <button id="saveFavoriteBtn">즐겨찾기 추가</button>
+  </div>
+</div>
+
+<!-- 📚 성경 탐색 -->
+<div id="bible" class="view">
+  <div class="section">
+    <h2>📚 성경 탐색</h2>
+    <label>책 선택:</label>
+    <select id="bookSelect"></select>
+    <label>장 선택:</label>
+    <select id="chapterSelect"></select>
+    <label>절 선택:</label>
+    <select id="verseSelect"></select>
+    <div style="display:flex;gap:5px;flex-wrap:wrap;">
+      <button id="prevChapterBtn">◀ 이전 장</button>
+      <button id="showVerseBtn">선택 절 보기</button>
+      <button id="showChapterBtn">장 전체 보기</button>
+      <button id="nextChapterBtn">다음 장 ▶</button>
+    </div>
+    <div id="bibleResult" style="margin-top:10px;"></div>
+  </div>
+</div>
+
+<!-- 🕊 묵상 -->
+<div id="meditation" class="view">
+  <div class="section">
+    <h2>🕊 묵상 기록</h2>
+    <input id="meditationVerse" placeholder="묵상한 말씀 (예: 요한복음 3:16)" />
+    <textarea id="meditationInput" placeholder="오늘의 묵상을 기록하세요..."></textarea>
+    <button id="saveMeditation">저장</button>
+    <div id="meditationList"></div>
+  </div>
+</div>
+
+<!-- 🙏 기도 -->
+<div id="prayer" class="view">
+  <div class="section">
+    <h2>🙏 기도 제목</h2>
+    <textarea id="prayerInput" placeholder="기도 제목을 적으세요..."></textarea>
+    <button id="savePrayer">저장</button>
+    <div id="prayerList"></div>
+  </div>
+</div>
+
+<!-- 💖 감사 -->
+<div id="thanks" class="view">
+  <div class="section">
+    <h2>💖 감사 제목</h2>
+    <textarea id="thanksInput" placeholder="감사한 일을 적으세요..."></textarea>
+    <button id="saveThanks">저장</button>
+    <div id="thanksList"></div>
+  </div>
+</div>
+
+<!-- ⭐ 즐겨찾기 -->
+<div id="favorites" class="view">
+  <div class="section">
+    <h2>⭐ 즐겨찾기 말씀</h2>
+    <div id="favoritesContainer"></div>
+  </div>
+</div>
+
+<script>
+/* 탭 전환 */
+const tabs=document.querySelectorAll(".tab");
+const views=document.querySelectorAll(".view");
+tabs.forEach(tab=>tab.addEventListener("click",()=>{
+  tabs.forEach(t=>t.classList.remove("active"));
+  tab.classList.add("active");
+  views.forEach(v=>v.classList.remove("active"));
+  document.getElementById(tab.dataset.tab).classList.add("active");
+}));
+
+/* 저장 */
+const StorageKey="faith_app_full_v3";
+function loadState(){return JSON.parse(localStorage.getItem(StorageKey))||{meditations:[],prayers:[],thanks:[],favorites:[]};}
+function saveState(s){localStorage.setItem(StorageKey,JSON.stringify(s));}
+
+/* 성경 데이터 */
+const API_BASE="https://bible-api.com/";
+const chapterCounts={Genesis:50,Exodus:40,Leviticus:27,Numbers:36,Deuteronomy:34,Joshua:24,Judges:21,Ruth:4,"1 Samuel":31,"2 Samuel":24,"1 Kings":22,"2 Kings":25,"1 Chronicles":29,"2 Chronicles":36,Ezra:10,Nehemiah:13,Esther:10,Job:42,Psalms:150,Proverbs:31,Ecclesiastes:12,"Song of Solomon":8,Isaiah:66,Jeremiah:52,Lamentations:5,Ezekiel:48,Daniel:12,Hosea:14,Joel:3,Amos:9,Obadiah:1,Jonah:4,Micah:7,Nahum:3,Habakkuk:3,Zephaniah:3,Haggai:2,Zechariah:14,Malachi:4,Matthew:28,Mark:16,Luke:24,John:21,Acts:28,Romans:16,"1 Corinthians":16,"2 Corinthians":13,Galatians:6,Ephesians:6,Philippians:4,Colossians:4,"1 Thessalonians":5,"2 Thessalonians":3,"1 Timothy":6,"2 Timothy":4,Titus:3,Philemon:1,Hebrews:13,James:5,"1 Peter":5,"2 Peter":3,"1 John":5,"2 John":1,"3 John":1,Jude:1,Revelation:22};
+const booksList=Object.keys(chapterCounts);
+
+/* 오늘의 말씀 */
+const verseText=document.getElementById("verseText");
+async function fetchVerse(b,c,v){const res=await fetch(`${API_BASE}${encodeURIComponent(b)}+${c}:${v}?translation=web`);const data=await res.json();return data.text?`${b} ${c}:${v} — ${data.text.trim()}`:null;}
+async function showRandomVerse(){verseText.textContent="📖 말씀을 불러오는 중...";const b=booksList[Math.floor(Math.random()*booksList.length)];const c=Math.floor(Math.random()*chapterCounts[b])+1;const v=Math.floor(Math.random()*20)+1;const r=await fetchVerse(b,c,v);verseText.textContent=r||"불러오기 실패. 다시 시도하세요.";}
+document.getElementById("newVerseBtn").onclick=showRandomVerse;showRandomVerse();
+
+/* 즐겨찾기 */
+function renderFavorites(){const s=loadState();const c=document.getElementById("favoritesContainer");c.innerHTML="";s.favorites.forEach((v,i)=>{const d=document.createElement("div");d.className="item";d.innerHTML=`<span>${v}</span><button class="delete-btn">삭제</button>`;d.querySelector(".delete-btn").onclick=()=>{s.favorites.splice(i,1);saveState(s);renderFavorites();};c.appendChild(d);});}
+document.getElementById("saveFavoriteBtn").onclick=()=>{const s=loadState();const v=verseText.textContent.trim();if(v&&!s.favorites.includes(v)){s.favorites.push(v);saveState(s);renderFavorites();}};renderFavorites();
+
+/* 성경 탐색 */
+const bookSelect=document.getElementById("bookSelect"),chapterSelect=document.getElementById("chapterSelect"),verseSelect=document.getElementById("verseSelect");
+booksList.forEach(b=>{const o=document.createElement("option");o.value=b;o.textContent=b;bookSelect.appendChild(o);});
+bookSelect.onchange=()=>{chapterSelect.innerHTML="";const max=chapterCounts[bookSelect.value];for(let i=1;i<=max;i++){const o=document.createElement("option");o.value=i;o.textContent=`${i}장`;chapterSelect.appendChild(o);}chapterSelect.dispatchEvent(new Event("change"));};
+chapterSelect.onchange=async()=>{verseSelect.innerHTML="";const b=bookSelect.value,c=chapterSelect.value;const res=await fetch(`${API_BASE}${encodeURIComponent(b)}+${c}?translation=web`);const data=await res.json();const total=data.verses?data.verses.length:50;for(let i=1;i<=total;i++){const o=document.createElement("option");o.value=i;o.textContent=`${i}절`;verseSelect.appendChild(o);}};
+async function showVerse(){const b=bookSelect.value,c=chapterSelect.value,v=verseSelect.value;const res=await fetch(`${API_BASE}${encodeURIComponent(b)}+${c}:${v}?translation=web`);const data=await res.json();document.getElementById("bibleResult").innerHTML=data.text?`<div class="card">${b} ${c}:${v} — ${data.text}</div>`:"불러오기 실패";}
+async function showChapter(){const b=bookSelect.value,c=chapterSelect.value;const res=await fetch(`${API_BASE}${encodeURIComponent(b)}+${c}?translation=web`);const data=await res.json();document.getElementById("bibleResult").innerHTML=data.verses?`<h3>${b} ${c}장</h3>`+data.verses.map(v=>`<div class="card"><b>${v.verse}절</b> ${v.text}</div>`).join(""):"불러오기 실패";}
+document.getElementById("showVerseBtn").onclick=showVerse;
+document.getElementById("showChapterBtn").onclick=showChapter;
+document.getElementById("prevChapterBtn").onclick=()=>{let c=parseInt(chapterSelect.value);if(c>1){chapterSelect.value=c-1;chapterSelect.dispatchEvent(new Event("change"));showChapter();}};
+document.getElementById("nextChapterBtn").onclick=()=>{let c=parseInt(chapterSelect.value);const max=chapterCounts[bookSelect.value];if(c<max){chapterSelect.value=c+1;chapterSelect.dispatchEvent(new Event("change"));showChapter();}};
+bookSelect.value="John";bookSelect.dispatchEvent(new Event("change"));
+
+/* 묵상/기도/감사 */
+function renderList(id,arr,key){const c=document.getElementById(id);c.innerHTML="";arr.forEach((t,i)=>{const d=document.createElement("div");d.className="item";
+if(key==="prayers"){
+  d.innerHTML=`<div><b>${t.title}</b><div class='response'>${t.answered?"✅ 응답됨: "+t.response:"⏳ 응답 대기중"}</div></div>
+  <button class='delete-btn'>삭제</button>`;
+}else{
+  d.innerHTML=`<span>${t}</span><button class='delete-btn'>삭제</button>`;
+}
+d.querySelector(".delete-btn").onclick=()=>{const s=loadState();s[key].splice(i,1);saveState(s);renderList(id,s[key],key);};
+if(key==="prayers"&&!t.answered){
+  const check=document.createElement("button");
+  check.textContent="응답됨 ✔️";
+  check.style.marginLeft="5px";
+  check.onclick=()=>{
+    const response=prompt("응답 내용(어떻게 응답되었는지)을 입력하세요:");
+    if(response){const s=loadState();s.prayers[i].answered=true;s.prayers[i].response=response;saveState(s);renderList(id,s.prayers,"prayers");}
+  };
+  d.appendChild(check);
+}
+c.appendChild(d);});}
+const s=loadState();
+renderList("meditationList",s.meditations,"meditations");
+renderList("prayerList",s.prayers,"prayers");
+renderList("thanksList",s.thanks,"thanks");
+
+document.getElementById("saveMeditation").onclick=()=>{const verse=document.getElementById("meditationVerse").value.trim();const val=document.getElementById("meditationInput").value.trim();if(val){const s=loadState();s.meditations.push(verse?`${verse} — ${val}`:val);saveState(s);renderList("meditationList",s.meditations,"meditations");document.getElementById("meditationInput").value="";document.getElementById("meditationVerse").value="";}};
+document.getElementById("savePrayer").onclick=()=>{const val=document.getElementById("prayerInput").value.trim();if(val){const s=loadState();s.prayers.push({title:val,answered:false,response:""});saveState(s);renderList("prayerList",s.prayers,"prayers");document.getElementById("prayerInput").value="";}};
+document.getElementById("saveThanks").onclick=()=>{const val=document.getElementById("thanksInput").value.trim();if(val){const s=loadState();s.thanks.push(val);saveState(s);renderList("thanksList",s.thanks,"thanks");document.getElementById("thanksInput").value="";}};
+</script>
+</body>
+</html>
