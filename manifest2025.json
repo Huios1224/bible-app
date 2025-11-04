@@ -1,0 +1,9 @@
+{
+  "name": "성령의 인도하심",
+  "short_name": "묵상앱",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#f9fafb",
+  "theme_color": "#7fb3ff",
+  "icons": []
+}
